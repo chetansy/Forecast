@@ -1,0 +1,57 @@
+library(readxl)
+library(forecast)
+library(fpp)
+library(smooth)
+library(tseries)
+
+airlines<- read.csv(file.choose())
+
+airlines_time<- ts(airlines$Passengers,frequency = 12,start = c(1995)) ##Convertd into Timme Series
+
+#Split into train and test Time Series 
+train<- ts(airlines_time[1:84],frequency = 12)
+test<- ts(airlines_time[85:96],frequency = 12)
+
+plot(train)
+
+##with Optimum value
+hw_abg<- HoltWinters(train,alpha = 0.2,beta = 0.1,gamma = 0.1) ## As plot shows it has level , trend & Seasnlity
+hw_abg
+hwabg_pred<- data.frame(predict(hw_nabg,n.ahead = 12))
+plot(forecast(hw_abg,h = 12))
+hwabg_mape<- MAPE(hwabg_pred$fit,test)*100
+hwabg_mape ##93.68%
+
+##without Optimum value
+hw_nabg<- HoltWinters(train)
+hw_nabg
+hwnabg_pred<- data.frame(predict(hw_nabg,n.ahead = 12))
+plot(forecast(hw_nabg,h = 12))
+hwnabg_mape<- MAPE(hwnabg_pred$fit,test)*100
+hwnabg_mape  ## 1.73
+
+## As hwnabg_mape gives small Mape Value ,that is the best model
+## Plot New Model
+new_model<- HoltWinters(airlines_time)
+plot(forecast(new_model,n.ahead = 12))
+
+##Arima Model
+plot(train)
+acf(train)
+pacf(train)
+a<- arima(train ,order = c(1,1,1),method ="ML")
+a
+
+## Auto Arima Model Building
+library(forecast)
+model_AA <- auto.arima(train)
+model_AA
+pred_AA <- data.frame(forecast(model_AA))
+pred_AA
+acf(model_AA$residuals)
+pacf(model_AA$residuals)
+windows()
+plot(forecast(model_AA,h=12),xaxt="n")
+
+
+write.csv(pred_AA,file="Airline_track.csv",col.names = F,row.names = F)
